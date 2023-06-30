@@ -1,0 +1,14 @@
+#!/bin/bash
+# script to convert a video to 100 images
+
+set -e
+
+if [ $# -ne 3 ]; then
+  echo "Usage: video_to_images input_video directory category"
+  echo "input_video will be converted to 100 images in directory/category"
+  exit 1
+fi
+
+duration=$(ffprobe -i $1 -show_entries format=duration -v quiet -of csv="p=0")
+mkdir $2/$3
+ffmpeg -i $1 -qscale:v 2 -vf "fps=100/$duration" $2/$3/$3\_%04d.jpg

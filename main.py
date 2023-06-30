@@ -16,6 +16,10 @@ if not capture.isOpened():
     print("Cannot open camera")
     exit()
 
+# record video for training
+global record 
+record = None
+
 # thread to wait for image recognition
 working = threading.Event()
 global result
@@ -48,14 +52,28 @@ with GestureRecognizer.create_from_options(options) as recognizer:
         # Display the resulting frame
         # write FPS
         text = "FPS: " + str(fps_logger.get_fps())
+        if record != None:
+            record.write(image)
+            cv.putText(image, 'Recording', (10, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         cv.putText(image, text, (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (100, 255, 0), 1, cv.LINE_AA)
         draw_gesture(image, result) # draw detected hand gesture
         cv.imshow('frame', image)   # show image
 
+        key = cv.waitKey(1)
         # press q to exit
-        if cv.waitKey(1) == ord('q'):
+        if key == ord('q'):
             break
+        elif key == ord('r'):
+            if record == None:
+                record = cv.VideoWriter('output.mp4', 
+                    cv.VideoWriter_fourcc(*'avc1'),
+                    30, (image.shape[1], image.shape[0]))
+            else:
+                record.release()
+                record = None
 
 # When everything done, release the capture
 capture.release()
+if record != None:
+    record.release()
 cv.destroyAllWindows()
