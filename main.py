@@ -33,7 +33,7 @@ def update_result(res: GestureRecognizerResult, output_image: mp.Image, timestam
     working.set()
 
 options = GestureRecognizerOptions(
-    base_options=BaseOptions(model_asset_path='gesture_recognizer.task'),
+    base_options=BaseOptions(model_asset_path='drone_gesture_recognizer.task'),
     running_mode=VisionRunningMode.LIVE_STREAM,
     result_callback=update_result)
 with GestureRecognizer.create_from_options(options) as recognizer:
