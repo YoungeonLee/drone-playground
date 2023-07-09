@@ -2,3 +2,6 @@ __pycache__
 .DS_Store
 output.mp4
 output/*
+hand_embedding_label_ds
+raw_data
+meta_info.pickle
