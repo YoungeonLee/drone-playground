@@ -1,12 +1,20 @@
 import mediapipe as mp
 import cv2 as cv
-import threading
 import time
 from utils import FPSLogger, draw_gesture
-import os
 from recorder import Recorder
 from gesture_predictor import GesturePredictor
 from result_holder import ResultHolder
+import argparse
+from djitellopy import Tello
+import numpy as np
+from drone_controller import DroneController
+
+parser = argparse.ArgumentParser(
+                    prog='main.py',
+                    description='Control drone with various methods')
+parser.add_argument('-c', '--camera', default="tello", choices=["tello", "pc"], help="which camera to use") # positional argument
+args = parser.parse_args()
 
 BaseOptions = mp.tasks.BaseOptions
 HandLandmarker = mp.tasks.vision.HandLandmarker
@@ -15,11 +23,23 @@ HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
 VisionRunningMode = mp.tasks.vision.RunningMode
 
 recorder = Recorder()
+capture = None
 
 # start video capture
-capture = cv.VideoCapture(0)
-if not capture.isOpened():
-    print("Cannot open camera")
+drone_controller = None
+if args.camera == "tello":
+    tello = Tello()
+    drone_controller = DroneController(tello)
+    tello.connect()
+    tello.streamon()
+    frame_read = tello.get_frame_read()
+elif args.camera == "pc":
+    capture = cv.VideoCapture(0)
+    if not capture.isOpened():
+        print("Cannot open camera")
+        exit()
+else:
+    print('Error: Unknown camera argument')
     exit()
 
 result_holder = ResultHolder()
@@ -51,45 +71,56 @@ with HandLandmarker.create_from_options(options) as landmarker:
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
         landmarker.detect_async(mp_image, time_ms)
 
-        # Display the resulting frame
-        # write FPS
-        text = "FPS: " + str(fps_logger.get_fps())
-        cv.putText(image, text, (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (100, 255, 0), 1, cv.LINE_AA)
-        if recorder.label != None:
-            text = f"Gesture: {recorder.label} {recorder.label_count()}" 
-            cv.putText(image, text, (10, 60), cv.FONT_HERSHEY_SIMPLEX, 1, (100, 255, 0), 1, cv.LINE_AA)
-            if recorder.recording:
-                recorder.record_gesture(result_holder.handlandmark)   # record if needed
+                # Display the resulting frame
+                # write FPS and battery
+                text = "FPS: " + str(fps_logger.get_fps())
+                if args.camera == "tello":
+                    text += f' Battery: {tello.get_battery()}' # type: ignore
+                cv.putText(image, text, (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (100, 255, 0), 1, cv.LINE_AA)
+                if recorder.label != None:
+                    text = f"Gesture: {recorder.label} {recorder.label_count()}" 
+                    cv.putText(image, text, (10, 60), cv.FONT_HERSHEY_SIMPLEX, 1, (100, 255, 0), 1, cv.LINE_AA)
+                    if recorder.recording and result_holder.has_results():
+                        recorder.record_gesture(result_holder.handlandmark)   # record if needed
 
-        draw_gesture(image, result_holder) # draw detected hand gesture
-            
-        cv.imshow('frame', image)   # show image
+                if result_holder.has_results():
+                    draw_gesture(image, result_holder) # draw detected hand gesture
+                    
+                cv.imshow('frame', image)   # show image
 
-        key = cv.waitKey(1)
-        num = key - 48
-        # press q to exit
-        if key == ord('q'):
-            break
-        elif num == 1:
-            recorder.change_label('left')
-        elif num == 2:
-            recorder.change_label('right')
-        elif num == 3:
-            recorder.change_label('forward')
-        elif num == 4:
-            recorder.change_label('backward')
-        elif num == 5:
-            recorder.change_label('up')
-        elif num == 6:
-            recorder.change_label('down')
-        elif num == 7:
-            recorder.change_label('stop')
-        elif num == 8:
-            recorder.change_label('none')
-        # press space bar toggle record
-        elif key == 32:
-            recorder.toggle_recording()
+                key = cv.waitKey(1)
+                num = key - 48
+                if args.camera == "tello":
+                    assert drone_controller # type: ignore
+                    drone_controller.control_drone(key, result_holder)
+                # press esc to exit
+                if key == 27:
+                    break
+                elif num == 1:
+                    recorder.change_label('left')
+                elif num == 2:
+                    recorder.change_label('right')
+                elif num == 3:
+                    recorder.change_label('forward')
+                elif num == 4:
+                    recorder.change_label('backward')
+                elif num == 5:
+                    recorder.change_label('up')
+                elif num == 6:
+                    recorder.change_label('down')
+                elif num == 7:
+                    recorder.change_label('stop')
+                elif num == 8:
+                    recorder.change_label('none')
+                # press c toggle record
+                elif key == ord('c'):
+                    if args.camera == 'pc':
+                        recorder.toggle_recording()
+finally:
+    if drone_controller:
+        drone_controller.land()
 
 # When everything done, release the capture
-capture.release()
+if capture: 
+    capture.release()
 cv.destroyAllWindows()

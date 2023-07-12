@@ -68,9 +68,7 @@ def draw_gesture(image, result: ResultHolder):
         gesture = result.gesture
         category = gesture['prediction']
         probability = round(gesture['probability'], 2)
-        print(probability)
         text = f"{hand}: {category} {str(probability)}"
-        print(text)
         color = (100, 255, 0)
         if probability < 0.7:
             color = (0, 0, 255)
