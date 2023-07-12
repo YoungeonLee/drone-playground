@@ -1,7 +1,7 @@
 import mediapipe as mp
 import cv2 as cv
 import time
-from utils import FPSLogger, draw_gesture
+from utils import FPSLogger, draw_landmarks
 from recorder import Recorder
 from gesture_predictor import GesturePredictor
 from result_holder import ResultHolder
@@ -21,6 +21,9 @@ HandLandmarker = mp.tasks.vision.HandLandmarker
 HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
 HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
 VisionRunningMode = mp.tasks.vision.RunningMode
+PoseLandmarker = mp.tasks.vision.PoseLandmarker
+PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
+PoseLandmarkerResult = mp.tasks.vision.PoseLandmarkerResult
 
 recorder = Recorder()
 capture = None
@@ -48,28 +51,44 @@ fps_logger = FPSLogger()
 
 gesture_predictor = GesturePredictor()
 
-def update_result(res: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
+def update_handlandmarker_result(res: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
     """callback function that runs after processing an image"""
     gesture = gesture_predictor.predict(res)    # type: ignore
-    result_holder.update(res, gesture)
+    result_holder.update_handlandmark(res, gesture)
 
-model_path='hand_landmarker.task'
-options = HandLandmarkerOptions(
-    base_options=BaseOptions(model_asset_path=model_path),
+def update_poselandmark_result(result: PoseLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
+    result_holder.update_poselandmark(result)
+    print('pose landmarker result: {}'.format(result))
+
+handlandmarker_options = HandLandmarkerOptions(
+    base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
     running_mode=VisionRunningMode.LIVE_STREAM,
-    result_callback=update_result)
+    result_callback=update_handlandmarker_result)
+poselandmark_options = PoseLandmarkerOptions(
+    base_options=BaseOptions(model_asset_path='pose_landmarker_heavy.task'),
+    running_mode=VisionRunningMode.LIVE_STREAM,
+    result_callback=update_poselandmark_result)
 
-with HandLandmarker.create_from_options(options) as landmarker:
-    while True:
-        # read a frame from camera
-        ret, frame = capture.read()
-        if not ret:
-            print("Can't receive frame (stream end?). Exiting ...")
-            break
-        image = cv.flip(frame, 1)   # flip image horizontally
-        time_ms = int(round(time.time() * 1000))
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
-        landmarker.detect_async(mp_image, time_ms)
+try:
+    with HandLandmarker.create_from_options(handlandmarker_options) as hand_landmarker:
+        with PoseLandmarker.create_from_options(poselandmark_options) as pose_landmarker:
+            while True:
+                # read a frame from camera
+                if args.camera == "tello":
+                    assert frame_read   # type: ignore
+                    frame = frame_read.frame
+                    assert type(frame) == np.ndarray
+                    frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+                elif args.camera == "pc":
+                    ret, frame = capture.read() # type: ignore
+                    if not ret:
+                        print("Can't receive frame (stream end?). Exiting ...")
+                        break
+                image = cv.flip(frame, 1)   # flip image horizontally   # type: ignore 
+                time_ms = int(round(time.time() * 1000))
+                mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
+                hand_landmarker.detect_async(mp_image, time_ms)
+                pose_landmarker.detect_async(mp_image, time_ms)
 
                 # Display the resulting frame
                 # write FPS and battery
@@ -80,11 +99,10 @@ with HandLandmarker.create_from_options(options) as landmarker:
                 if recorder.label != None:
                     text = f"Gesture: {recorder.label} {recorder.label_count()}" 
                     cv.putText(image, text, (10, 60), cv.FONT_HERSHEY_SIMPLEX, 1, (100, 255, 0), 1, cv.LINE_AA)
-                    if recorder.recording and result_holder.has_results():
+                    if recorder.recording and result_holder.has_handlandmark_results():
                         recorder.record_gesture(result_holder.handlandmark)   # record if needed
 
-                if result_holder.has_results():
-                    draw_gesture(image, result_holder) # draw detected hand gesture
+                draw_landmarks(image, result_holder) # draw detected hand gesture
                     
                 cv.imshow('frame', image)   # show image
 

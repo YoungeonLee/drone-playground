@@ -37,9 +37,14 @@ class FPSLogger:
         self.prev_frame_time = self.new_frame_time
         return round(fps)
     
-def draw_gesture(image, result: ResultHolder):
-    if not result.handlandmark:
-        return
+def draw_landmarks(image, result: ResultHolder):
+    if result.has_handlandmark_results():
+        draw_handlandmarks(image, result)
+    
+    if result.has_poselandmark_result():
+        draw_poselandmarks(image, result)
+
+def draw_handlandmarks(image, result: ResultHolder):
     hand_result = result.handlandmark
     if hand_result.hand_landmarks:
         # for drawing hand-bounding box
@@ -76,6 +81,49 @@ def draw_gesture(image, result: ResultHolder):
 
         # draw lines between landmarks
         for connection in mp.tasks.vision.HandLandmarksConnections().HAND_CONNECTIONS:
+            start = connection.start
+            end = connection.end
+            start_point = denormalize_xy(landmarks[start], image)
+            end_point = denormalize_xy(landmarks[end], image)
+            cv.line(image, start_point, end_point, (0, 255, 0), 3)
+
+def draw_poselandmarks(image, result: ResultHolder):
+    pose_result = result.poselandmark
+    if pose_result.pose_landmarks:
+        # # for drawing hand-bounding box
+        # min_x = image.shape[1]
+        # min_y = image.shape[0]
+        # max_x = 0 
+        # max_y = 0
+
+        landmarks = pose_result.pose_landmarks[0]
+        for landmark in landmarks:
+            # draw points on landmarks
+            xy = denormalize_xy(landmark, image)
+            cv.circle(image, xy, 5, (0, 0, 255), -1)
+
+            # # calculate hand-bounding box
+            # min_x = min(min_x, xy[0])
+            # min_y = min(min_y, xy[1])
+            # max_x = max(max_x, xy[0])
+            # max_y = max(max_y, xy[1])
+
+        # # draw hand-bounding box with label
+        # pt1 = (min_x, min_y)
+        # pt2 = (max_x, max_y)
+        # cv.rectangle(image, pt1, pt2, (225, 0, 0), 2) # type: ignore
+        # hand = pose_result.handedness[0][0].category_name
+        # gesture = result.gesture
+        # category = gesture['prediction']
+        # probability = round(gesture['probability'], 2)
+        # text = f"{hand}: {category} {str(probability)}"
+        # color = (100, 255, 0)
+        # if probability < 0.7:
+            # color = (0, 0, 255)
+        # cv.putText(image, text, (pt1[0], pt1[1] - 10), cv.FONT_HERSHEY_SIMPLEX, 1, color, 1, cv.LINE_AA)
+
+        # draw lines between landmarks
+        for connection in mp.tasks.vision.PoseLandmarksConnections().POSE_LANDMARKS:
             start = connection.start
             end = connection.end
             start_point = denormalize_xy(landmarks[start], image)
