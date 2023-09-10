@@ -58,13 +58,14 @@ def update_handlandmarker_result(res: HandLandmarkerResult, output_image: mp.Ima
 
 def update_poselandmark_result(result: PoseLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
     result_holder.update_poselandmark(result)
+    print('pose landmarker result: {}'.format(result))
 
 handlandmarker_options = HandLandmarkerOptions(
     base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
     running_mode=VisionRunningMode.LIVE_STREAM,
     result_callback=update_handlandmarker_result)
 poselandmark_options = PoseLandmarkerOptions(
-    base_options=BaseOptions(model_asset_path='pose_landmarker_full.task'),
+    base_options=BaseOptions(model_asset_path='pose_landmarker_heavy.task'),
     running_mode=VisionRunningMode.LIVE_STREAM,
     result_callback=update_poselandmark_result)
 
