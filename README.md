@@ -50,13 +50,13 @@ Use keyboard to control the drone
 
 Use hand gesture to control the drone
 
-![left gesture](https://github.com/YoungeonLee/drone-playground/blob/main/left.jpg?raw=true)
-![right gesture](https://github.com/YoungeonLee/drone-playground/blob/main/right.jpg?raw=true)
-![forward gesture](https://github.com/YoungeonLee/drone-playground/blob/main/forward.jpg?raw=true)
-![backward gesture](https://github.com/YoungeonLee/drone-playground/blob/main/backward.jpg?raw=true)
-![up gesture](https://github.com/YoungeonLee/drone-playground/blob/main/up.jpg?raw=true)
-![down gesture](https://github.com/YoungeonLee/drone-playground/blob/main/down.jpg?raw=true)
-![stop gesture](https://github.com/YoungeonLee/drone-playground/blob/main/stop.jpg?raw=true)
+![left gesture](https://github.com/YoungeonLee/drone-playground/blob/main/pictures/left.jpg?raw=true)
+![right gesture](https://github.com/YoungeonLee/drone-playground/blob/main/pictures/right.jpg?raw=true)
+![forward gesture](https://github.com/YoungeonLee/drone-playground/blob/main/pictures/forward.jpg?raw=true)
+![backward gesture](https://github.com/YoungeonLee/drone-playground/blob/main/pictures/backward.jpg?raw=true)
+![up gesture](https://github.com/YoungeonLee/drone-playground/blob/main/pictures/up.jpg?raw=true)
+![down gesture](https://github.com/YoungeonLee/drone-playground/blob/main/pictures/down.jpg?raw=true)
+![stop gesture](https://github.com/YoungeonLee/drone-playground/blob/main/pictures/stop.jpg?raw=true)
 
 ## Recording
 
@@ -78,4 +78,4 @@ The data is raw result from mediapipe's handlandmarks and stored to `raw_data` f
 # Training
 
 Running the notebook `train.ipynb` uses files in `raw_data` to train a simple neural network
-and saves it to `gesture_recognizer.keras`.
+and saves it to `gesture_recognizer.keras`
