@@ -50,11 +50,14 @@ class DroneController:
                 self.mode = 'gesture'
 
         # gesture control
-        if self.mode == 'gesture' and result_holder.has_results():
-            self.gesture_control(result_holder.gesture)
+        if self.mode == 'gesture':
+            if result_holder.has_handlandmark_results():
+                self.gesture_control(result_holder.gesture)
+            else:
+                self.keyboard_control(-1)
 
     def keyboard_control(self, key):
-        speed = 20
+        speed = 50
         if key == 'a':
             self.drone.send_rc_control(-speed, 0, 0, 0)
         elif key == 'd':
