@@ -1,7 +1,7 @@
 import mediapipe as mp
 import cv2 as cv
 import time
-from utils import FPSLogger, draw_landmarks
+from utils import FPSLogger, change_contrast, draw_landmarks
 from recorder import Recorder
 from gesture_predictor import GesturePredictor
 from result_holder import ResultHolder
@@ -94,6 +94,8 @@ try:
                     print("Can't receive frame (stream end?). Exiting ...")
                     break
             image = cv.flip(frame, 1)   # flip image horizontally   # type: ignore 
+            image = change_contrast(image);
+
             time_ms = int(round(time.time() * 1000))
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
             hand_landmarker.detect_async(mp_image, time_ms)
